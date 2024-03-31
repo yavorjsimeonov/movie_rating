@@ -1,0 +1,28 @@
+CREATE DATABASE movie_rating;
+
+
+CREATE TABLE movie (
+    id INTEGER NOT NULL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    year INTEGER NOT NULL,
+    genre VARCHAR(255) NOT NULL,
+    director VARCHAR(255) NOT NULL,
+    average_rating INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE user (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+
+CREATE TABLE review (
+    id INTEGER NOT NULL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    opinion VARCHAR(255) NOT NULL,
+    rating INTEGER NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    author_name VARCHAR(255) NOT NULL,
+    user_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
