@@ -138,8 +138,8 @@ public class MovieRatingHandler extends AbstractHandler<MovieRatingAppConfig> im
 
     movieList = movieList.stream()
         .peek(movie -> {
-          String imageUrl = imageSearchService.fetchFirstImageUrl(movie.getTitle());
-          movie.setImageUrl(imageUrl);
+          String imageUrl = imageSearchService.fetchFirstImageUrl(movie.title);
+          movie.imageUrl = imageUrl;
         })
         .collect(Collectors.toList());
 
