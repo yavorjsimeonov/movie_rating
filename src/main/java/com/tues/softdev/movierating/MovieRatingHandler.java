@@ -35,11 +35,6 @@ public class MovieRatingHandler extends AbstractHandler<MovieRatingAppConfig> im
   @Autowired
   private ReviewRepository reviewRepository;
 
-  public MovieRatingHandler() {
-    super();
-    System.out.println("++++++++++ creating MovieRatingHandler....");
-  }
-
   @Override
   public String handleRequest(Map<String,String> event, Context context) {
 
