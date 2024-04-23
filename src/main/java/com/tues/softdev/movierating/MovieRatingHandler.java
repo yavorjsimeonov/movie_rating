@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.averagingInt;
 import static java.util.stream.Collectors.groupingBy;
@@ -34,6 +35,9 @@ public class MovieRatingHandler extends AbstractHandler<MovieRatingAppConfig> im
   private UserRepository userRepository;
   @Autowired
   private ReviewRepository reviewRepository;
+
+  private GoogleImageSearchService imageSearchService = new GoogleImageSearchService();
+
 
   @Override
   public String handleRequest(Map<String,String> event, Context context) {
@@ -131,6 +135,13 @@ public class MovieRatingHandler extends AbstractHandler<MovieRatingAppConfig> im
     List<Movie> movieList = searchTitle != null ?
         List.of(getMovieRepository().findByTitle(searchTitle)) :
         getMovieRepository().findAll();
+
+    movieList = movieList.stream()
+        .peek(movie -> {
+          String imageUrl = imageSearchService.fetchFirstImageUrl(movie.getTitle());
+          movie.setImageUrl(imageUrl);
+        })
+        .collect(Collectors.toList());
 
     logger.log("Returning ratings calculated: " + movieList);
 

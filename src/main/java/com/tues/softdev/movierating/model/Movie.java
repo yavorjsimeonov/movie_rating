@@ -30,5 +30,8 @@ public class Movie {
   public int averageRating;
 
   @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-  public Set<Review> reviews = new HashSet<>();
+  private Set<Review> reviews = new HashSet<>();
+
+  @Column(name = "image_url", length = 1024)
+  public String imageUrl;
 }
