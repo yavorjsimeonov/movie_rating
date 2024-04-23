@@ -50,8 +50,8 @@ public abstract class AbstractHandler<T> {
         }
 
         //Create Spring application context
-        //applicationContext = new AnnotationConfigApplicationContext(typeParameterClass);
-        applicationContext = new AnnotationConfigApplicationContext("com.tues.softdev.movierating");
+        applicationContext = new AnnotationConfigApplicationContext(typeParameterClass);
+        //applicationContext = new AnnotationConfigApplicationContext("com.tues.softdev.movierating");
         System.out.println("++++++++++ applicationContext created....");
     }
 
