@@ -47,7 +47,7 @@ dependencies {
 }
 
 
-task packageFat(type: Zip) {
+task packageFat(type: Jar) {
     from compileJava
     from processResources
     into('lib') {
@@ -57,7 +57,7 @@ task packageFat(type: Zip) {
     fileMode = 0755
 }
 
-task packageLibs(type: Zip) {
+task packageLibs(type: Jar) {
     into('java/lib') {
         from configurations.runtimeClasspath
     }
