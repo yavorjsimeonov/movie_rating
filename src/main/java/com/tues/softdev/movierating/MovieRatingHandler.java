@@ -9,16 +9,11 @@ import com.tues.softdev.movierating.repository.MovieRepository;
 import com.tues.softdev.movierating.repository.ReviewRepository;
 import com.tues.softdev.movierating.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.GetAccountSettingsResponse;
 import software.amazon.awssdk.services.lambda.model.LambdaException;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -27,32 +22,22 @@ import java.util.logging.Logger;
 import static java.util.stream.Collectors.averagingInt;
 import static java.util.stream.Collectors.groupingBy;
 
-public class MovieRatingHandler implements RequestHandler<Map<String,String>, String> {
+@Service
+public class MovieRatingHandler extends AbstractHandler<MovieRatingAppConfig> implements RequestHandler<Map<String,String>, String> {
 
   private static final Logger logger = Logger.getLogger(MovieRatingHandler.class.getName());
   private static final LambdaClient lambdaClient = LambdaClient.builder().build();
 
-
+  @Autowired
   public MovieRepository movieRepository;
+  @Autowired
   private UserRepository userRepository;
+  @Autowired
   private ReviewRepository reviewRepository;
-  private ApplicationContext applicationContext;
 
-  public ApplicationContext getApplicationContext() {
-    if (this.applicationContext == null) {
-      Class typeParameterClass = ((Class) ((ParameterizedType) getClass()
-          .getGenericSuperclass())
-          .getActualTypeArguments()[0]);
-
-
-      if (!typeParameterClass.isAnnotationPresent(Configuration.class)) {
-        throw new RuntimeException(typeParameterClass + " is not a @Configuration class");
-      }
-
-      applicationContext = new AnnotationConfigApplicationContext(typeParameterClass);
-
-    }
-    return applicationContext;
+  public MovieRatingHandler() {
+    super();
+    System.out.println("++++++++++ creating MovieRatingHandler....");
   }
 
   @Override

@@ -30,5 +30,5 @@ public class Movie {
   public int averageRating;
 
   @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-  private Set<Review> reviews = new HashSet<>();
+  public Set<Review> reviews = new HashSet<>();
 }
