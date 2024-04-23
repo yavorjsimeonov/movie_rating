@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
-@EnableJpaRepositories
+@EnableJpaRepositories("com.tues.softdev.movierating.repository")
 @ComponentScan("com.tues.softdev.movierating")
 public class MovieRatingAppConfig {
 
