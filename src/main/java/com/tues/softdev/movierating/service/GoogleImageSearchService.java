@@ -1,4 +1,4 @@
-package com.tues.softdev.movierating;
+package com.tues.softdev.movierating.service;
 
 import java.io.IOException;
 import java.net.URI;
