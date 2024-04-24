@@ -7,10 +7,7 @@ import com.tues.softdev.movierating.model.Movie;
 import com.tues.softdev.movierating.model.Review;
 import com.tues.softdev.movierating.repository.ReviewRepository;
 import com.tues.softdev.movierating.repository.UserRepository;
-import com.tues.softdev.movierating.service.GoogleImageSearchService;
-import com.tues.softdev.movierating.service.MovieService;
-import com.tues.softdev.movierating.service.ReviewService;
-import com.tues.softdev.movierating.service.UserService;
+import com.tues.softdev.movierating.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.SpringApplication;
@@ -36,6 +33,7 @@ public class MovieRatingHandler /*extends AbstractHandler<MovieRatingAppConfig>*
   private ReviewService reviewService;
 
   private GoogleImageSearchService imageSearchService = new GoogleImageSearchService();
+  private SpotifySearchService spotifySearchService = new SpotifySearchService();
 
   public MovieRatingHandler() {
     // This will load the Spring application
@@ -153,8 +151,12 @@ public class MovieRatingHandler /*extends AbstractHandler<MovieRatingAppConfig>*
         .peek(movie -> {
           String imageUrl = imageSearchService.fetchFirstImageUrl(movie.title);
           movie.imageUrl = imageUrl;
+          String soundtrackUrl = spotifySearchService.searchSoundtrack(movie.title);
+          movie.soundtrackUrl = soundtrackUrl;
         })
         .collect(Collectors.toList());
+
+
 
     logger.log("Returning ratings calculated: " + movieList);
 

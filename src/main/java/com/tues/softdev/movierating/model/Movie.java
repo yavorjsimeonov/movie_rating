@@ -34,4 +34,9 @@ public class Movie {
 
   @Column(name = "image_url", length = 1024)
   public String imageUrl;
+
+  @Column(name = "soundtrack_url", length = 1024)
+  public String soundtrackUrl;
+
+
 }
