@@ -5,54 +5,45 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.tues.softdev.movierating.model.Movie;
 import com.tues.softdev.movierating.model.Review;
-import com.tues.softdev.movierating.repository.MovieRepository;
 import com.tues.softdev.movierating.repository.ReviewRepository;
 import com.tues.softdev.movierating.repository.UserRepository;
+import com.tues.softdev.movierating.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.ConfigurableApplicationContext;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.GetAccountSettingsResponse;
 import software.amazon.awssdk.services.lambda.model.LambdaException;
 
-import java.lang.reflect.ParameterizedType;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.averagingInt;
 import static java.util.stream.Collectors.groupingBy;
 
-public class MovieRatingHandler implements RequestHandler<Map<String,String>, String> {
+public class MovieRatingHandler /*extends AbstractHandler<MovieRatingAppConfig>*/ implements RequestHandler<Map<String,String>, String> {
 
   private static final Logger logger = Logger.getLogger(MovieRatingHandler.class.getName());
   private static final LambdaClient lambdaClient = LambdaClient.builder().build();
 
+  private MovieService movieService;
+  private UserService userService;
+  private ReviewService reviewService;
 
-  public MovieRepository movieRepository;
-  private UserRepository userRepository;
-  private ReviewRepository reviewRepository;
-  private ApplicationContext applicationContext;
+  private GoogleImageSearchService imageSearchService = new GoogleImageSearchService();
+  private SpotifySearchService spotifySearchService = new SpotifySearchService();
 
-  public ApplicationContext getApplicationContext() {
-    if (this.applicationContext == null) {
-      Class typeParameterClass = ((Class) ((ParameterizedType) getClass()
-          .getGenericSuperclass())
-          .getActualTypeArguments()[0]);
-
-
-      if (!typeParameterClass.isAnnotationPresent(Configuration.class)) {
-        throw new RuntimeException(typeParameterClass + " is not a @Configuration class");
-      }
-
-      applicationContext = new AnnotationConfigApplicationContext(typeParameterClass);
-
-    }
-    return applicationContext;
+  public MovieRatingHandler() {
+    // This will load the Spring application
+    ConfigurableApplicationContext ctx = SpringApplication.run(MovieRatingApplication.class, new String[] {});
+    System.out.println("============= ctx.appName: " + ctx.getApplicationName() + "; ctx.getBeanDefinitionNames" + Arrays.asList(ctx.getBeanDefinitionNames()));
+    // Initialize the dependencies using the spring context
+    movieService = ctx.getBean(MovieService.class);
+    reviewService = ctx.getBean(ReviewService.class);
+    userService = ctx.getBean(UserService.class);
+    //movieService = (MovieService) ctx.getAutowireCapableBeanFactory().autowire(MovieService.class, AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE, true);
   }
 
   @Override
@@ -89,7 +80,7 @@ public class MovieRatingHandler implements RequestHandler<Map<String,String>, St
     movie.director = event.get("director");
     movie.averageRating = 0;
 
-    getMovieRepository().save(movie);
+    movieService.save(movie);
     logger.log("Added movie: " + event);
 
     return msg;
@@ -106,10 +97,10 @@ public class MovieRatingHandler implements RequestHandler<Map<String,String>, St
     review.opinion = event.get("opinion");
     review.rating  = Integer.parseInt(event.get("rating"));
     review.createdAt = new Date();
-    review.movie = getMovieRepository().findByTitle(review.title);
-    review.user = getUserRepository().findByName(event.get("author"));;
+    review.movie = movieService.findByTitle(review.title);
+    review.user = userService.findByName(event.get("author"));;
 
-    getReviewRepository().save(review);
+    reviewService.save(review);
 
     logger.log("Added movieRating: " + event);
 
@@ -121,11 +112,11 @@ public class MovieRatingHandler implements RequestHandler<Map<String,String>, St
     LambdaLogger logger = context.getLogger();
     logger.log(msg);
 
-    List<Review> allReviews = getReviewRepository().findAll();
+    List<Review> allReviews = reviewService.findAll();
     Map<Long, List<Review>> ratingsByMovie = allReviews.stream().collect(groupingBy( it -> it.id));
 
     for (Map.Entry<Long, List<Review>> entry : ratingsByMovie.entrySet()) {
-      Movie movie = getMovieRepository().findById(entry.getKey()).orElse(null);
+      Movie movie = movieService.findById(entry.getKey()).orElse(null);
       if (movie == null) {
         logger.log("Movie not found: " + entry.getKey());
         continue;
@@ -133,7 +124,7 @@ public class MovieRatingHandler implements RequestHandler<Map<String,String>, St
 
       movie.averageRating = entry.getValue().stream().collect(averagingInt(it -> it.rating)).intValue();
 
-      getMovieRepository().save(movie);
+      movieService.save(movie);
 
       logger.log("Average rating calculated and stored for movie: " + event);
 
@@ -148,37 +139,28 @@ public class MovieRatingHandler implements RequestHandler<Map<String,String>, St
     logger.log(msg);
 
     String searchTitle = event.get("title");
-    List<Movie> movieList = searchTitle != null ?
-        List.of(getMovieRepository().findByTitle(searchTitle)) :
-        getMovieRepository().findAll();
+    List<Movie> movieList = new ArrayList<>();
+    if (searchTitle != null) {
+      Movie movie = movieService.findByTitle(searchTitle);
+      movieList = movie != null ? List.of(movie) : new ArrayList<>();
+    } else {
+      movieList = movieService.findAll();
+    }
+
+    movieList = movieList.stream()
+        .peek(movie -> {
+          String imageUrl = imageSearchService.fetchFirstImageUrl(movie.title);
+          movie.imageUrl = imageUrl;
+          String soundtrackUrl = spotifySearchService.searchSoundtrack(movie.title);
+          movie.soundtrackUrl = soundtrackUrl;
+        })
+        .collect(Collectors.toList());
+
+
 
     logger.log("Returning ratings calculated: " + movieList);
 
     return movieList;
-  }
-
-  private MovieRepository getMovieRepository() {
-    if (this.movieRepository == null) {
-      this.movieRepository = getApplicationContext().getBean(MovieRepository.class);
-    }
-
-    return this.movieRepository;
-  }
-
-  private ReviewRepository getReviewRepository() {
-    if (this.reviewRepository == null) {
-      this.reviewRepository = getApplicationContext().getBean(ReviewRepository.class);
-    }
-
-    return this.reviewRepository;
-  }
-
-  private UserRepository getUserRepository() {
-    if (this.userRepository == null) {
-      this.userRepository = getApplicationContext().getBean(UserRepository.class);
-    }
-
-    return this.userRepository;
   }
 
 }
